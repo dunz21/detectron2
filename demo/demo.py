@@ -95,6 +95,14 @@ if __name__ == "__main__":
     args = get_parser().parse_args()
     setup_logger(name="fvcore")
     logger = setup_logger()
+    #### DEBUG ####
+    args.config_file='/Users/diegosepulveda/Documents/diego/dev/ML/Cams/papers/detectron2/configs/COCO-Detection/faster_rcnn_R_50_FPN_1x.yaml'
+    args.video_input='/Users/diegosepulveda/Documents/CONCE_TEST_TRACK_ID_BENCHMARK.mp4'
+    args.opts=['MODEL.DEVICE', 'cpu','INPUT.MAX_SIZE_TEST', 1920]
+    # args.opts=['INPUT.MAX_SIZE_TEST', 1920] # Test Diego
+    #### DEBUG ####
+
+
     logger.info("Arguments: " + str(args))
 
     cfg = setup_cfg(args)
