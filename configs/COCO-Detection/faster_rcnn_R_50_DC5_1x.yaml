@@ -1,6 +1,6 @@
 _BASE_: "../Base-RCNN-DilatedC5.yaml"
 MODEL:
-  WEIGHTS: "detectron2://ImageNetPretrained/MSRA/R-50.pkl"
+  WEIGHTS: "/Users/diegosepulveda/Downloads/model_final_51d356.pkl" # 5
   MASK_ON: False
   RESNETS:
     DEPTH: 50

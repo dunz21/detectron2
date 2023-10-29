@@ -9,6 +9,7 @@ import time
 import warnings
 import cv2
 import tqdm
+from tracker.byte_tracker import BYTETracker
 
 from detectron2.config import get_cfg
 from detectron2.data.detection_utils import read_image
@@ -95,19 +96,41 @@ if __name__ == "__main__":
     args = get_parser().parse_args()
     setup_logger(name="fvcore")
     logger = setup_logger()
+
+    ### ByteTrack ###
+    class Options:
+        def __init__(self):
+            self.track_thresh=0.6
+            self.track_buffer=160
+            self.match_thresh=0.95
+            self.mot20=False
+    opt = Options()
+    tracker = BYTETracker(opt)
+    ### ByteTrack ###
+
+
     #### DEBUG ####
     args.config_file='/Users/diegosepulveda/Documents/diego/dev/ML/Cams/papers/detectron2/configs/COCO-Detection/faster_rcnn_R_50_FPN_1x.yaml'
-    args.video_input='/Users/diegosepulveda/Documents/CONCE_TEST_TRACK_ID_BENCHMARK.mp4'
-    args.opts=['MODEL.DEVICE', 'cpu','INPUT.MAX_SIZE_TEST', 1920]
+    
+    # SOLO PARA DEMO VIDEO DE 5 SEGUNDOS
+    # args.video_input='/Users/diegosepulveda/Documents/CONCE_TEST_TRACK_ID_BENCHMARK_SHORT_2.mp4'
+    # args.output=f"demo/CONCE_TEST_TRACK_ID_BENCHMARK_SHORT_2{str(opt.track_thresh)}_{str(opt.track_buffer)}_{str(opt.match_thresh)}.mp4"
+
+    args.video_input='/Users/diegosepulveda/Documents/diego/dev/ML/Cams/yolov7-object-tracking/CONCEPCION_CH1_PARTE1.mp4'
+    args.output=f"demo/CONCEPCION_CH1_PARTE1{str(opt.track_thresh)}_{str(opt.track_buffer)}_{str(opt.match_thresh)}.mp4"
+
+    args.opts=['MODEL.DEVICE', 'cpu']
     # args.opts=['INPUT.MAX_SIZE_TEST', 1920] # Test Diego
     #### DEBUG ####
+
+   
 
 
     logger.info("Arguments: " + str(args))
 
     cfg = setup_cfg(args)
 
-    demo = VisualizationDemo(cfg)
+    demo = VisualizationDemo(cfg,tracker=tracker)
 
     if args.input:
         if len(args.input) == 1:
