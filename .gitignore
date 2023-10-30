@@ -10,7 +10,7 @@ env
 *.diff
 *.jpg
 !/projects/DensePose/doc/images/*.jpg
-
+*.xlsx
 # compilation and distribution
 __pycache__
 _ext

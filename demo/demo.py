@@ -10,6 +10,7 @@ import warnings
 import cv2
 import tqdm
 from tracker.byte_tracker import BYTETracker
+import datetime
 
 from detectron2.config import get_cfg
 from detectron2.data.detection_utils import read_image
@@ -111,19 +112,21 @@ if __name__ == "__main__":
 
     #### DEBUG ####
     args.config_file='/Users/diegosepulveda/Documents/diego/dev/ML/Cams/papers/detectron2/configs/COCO-Detection/faster_rcnn_R_50_FPN_1x.yaml'
-    
+    OUTPUT_FILE=f"demo/CONCE_TEST_TRACK_ID_BENCHMARK_SHORT_2{str(opt.track_thresh)}_{str(opt.track_buffer)}_{str(opt.match_thresh)}.mp4" 
     # SOLO PARA DEMO VIDEO DE 5 SEGUNDOS
-    # args.video_input='/Users/diegosepulveda/Documents/CONCE_TEST_TRACK_ID_BENCHMARK_SHORT_2.mp4'
-    # args.output=f"demo/CONCE_TEST_TRACK_ID_BENCHMARK_SHORT_2{str(opt.track_thresh)}_{str(opt.track_buffer)}_{str(opt.match_thresh)}.mp4"
+    args.video_input='/Users/diegosepulveda/Documents/CONCE_TEST_TRACK_ID_BENCHMARK_SHORT.mp4'
 
-    args.video_input='/Users/diegosepulveda/Documents/diego/dev/ML/Cams/yolov7-object-tracking/CONCEPCION_CH1_PARTE1.mp4'
-    args.output=f"demo/CONCEPCION_CH1_PARTE1{str(opt.track_thresh)}_{str(opt.track_buffer)}_{str(opt.match_thresh)}.mp4"
+    # args.video_input='/Users/diegosepulveda/Documents/diego/dev/ML/Cams/yolov7-object-tracking/CONCEPCION_CH1_PARTE1.mp4'
+    # args.output=f"demo/CONCEPCION_CH1_PARTE1{str(opt.track_thresh)}_{str(opt.track_buffer)}_{str(opt.match_thresh)}.mp4"
 
+
+    if os.path.exists(OUTPUT_FILE):
+        current_date = datetime.datetime.now().strftime("%Y_%m_%d_%H:%M:%S")
+        OUTPUT_FILE = f"{OUTPUT_FILE.replace('.mp4', '')}_{current_date}.mp4"
+    args.output=OUTPUT_FILE
     args.opts=['MODEL.DEVICE', 'cpu']
     # args.opts=['INPUT.MAX_SIZE_TEST', 1920] # Test Diego
     #### DEBUG ####
-
-   
 
 
     logger.info("Arguments: " + str(args))
@@ -132,50 +135,7 @@ if __name__ == "__main__":
 
     demo = VisualizationDemo(cfg,tracker=tracker)
 
-    if args.input:
-        if len(args.input) == 1:
-            args.input = glob.glob(os.path.expanduser(args.input[0]))
-            assert args.input, "The input path(s) was not found"
-        for path in tqdm.tqdm(args.input, disable=not args.output):
-            # use PIL, to be consistent with evaluation
-            img = read_image(path, format="BGR")
-            start_time = time.time()
-            predictions, visualized_output = demo.run_on_image(img)
-            logger.info(
-                "{}: {} in {:.2f}s".format(
-                    path,
-                    "detected {} instances".format(len(predictions["instances"]))
-                    if "instances" in predictions
-                    else "finished",
-                    time.time() - start_time,
-                )
-            )
-
-            if args.output:
-                if os.path.isdir(args.output):
-                    assert os.path.isdir(args.output), args.output
-                    out_filename = os.path.join(args.output, os.path.basename(path))
-                else:
-                    assert len(args.input) == 1, "Please specify a directory with args.output"
-                    out_filename = args.output
-                visualized_output.save(out_filename)
-            else:
-                cv2.namedWindow(WINDOW_NAME, cv2.WINDOW_NORMAL)
-                cv2.imshow(WINDOW_NAME, visualized_output.get_image()[:, :, ::-1])
-                if cv2.waitKey(0) == 27:
-                    break  # esc to quit
-    elif args.webcam:
-        assert args.input is None, "Cannot have both --input and --webcam!"
-        assert args.output is None, "output not yet supported with --webcam!"
-        cam = cv2.VideoCapture(0)
-        for vis in tqdm.tqdm(demo.run_on_video(cam)):
-            cv2.namedWindow(WINDOW_NAME, cv2.WINDOW_NORMAL)
-            cv2.imshow(WINDOW_NAME, vis)
-            if cv2.waitKey(1) == 27:
-                break  # esc to quit
-        cam.release()
-        cv2.destroyAllWindows()
-    elif args.video_input:
+    if args.video_input:
         video = cv2.VideoCapture(args.video_input)
         width = int(video.get(cv2.CAP_PROP_FRAME_WIDTH))
         height = int(video.get(cv2.CAP_PROP_FRAME_HEIGHT))
