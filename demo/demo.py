@@ -22,7 +22,7 @@ from predictor import VisualizationDemo
 WINDOW_NAME = "COCO detections"
 
 
-def setup_cfg(args):
+def setup_cfg(args,weights=None):
     # load config from file and command-line arguments
     cfg = get_cfg()
     # To use demo for Panoptic-DeepLab, please uncomment the following two lines.
@@ -34,6 +34,8 @@ def setup_cfg(args):
     cfg.MODEL.RETINANET.SCORE_THRESH_TEST = args.confidence_threshold
     cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = args.confidence_threshold
     cfg.MODEL.PANOPTIC_FPN.COMBINE.INSTANCES_CONFIDENCE_THRESH = args.confidence_threshold
+    if weights is not None:
+        cfg.MODEL.WEIGHTS = weights
     cfg.freeze()
     return cfg
 
@@ -111,21 +113,23 @@ if __name__ == "__main__":
 
 
     #### DEBUG ####
-    args.config_file='/Users/diegosepulveda/Documents/diego/dev/ML/Cams/papers/detectron2/configs/COCO-Detection/faster_rcnn_R_50_FPN_1x.yaml'
-    OUTPUT_FILE=f"demo/CONCE_TEST_TRACK_ID_BENCHMARK_SHORT_2{str(opt.track_thresh)}_{str(opt.track_buffer)}_{str(opt.match_thresh)}.mp4" 
-    # SOLO PARA DEMO VIDEO DE 5 SEGUNDOS
-    args.video_input='/Users/diegosepulveda/Documents/CONCE_TEST_TRACK_ID_BENCHMARK_SHORT.mp4'
+    args.config_file='configs/COCO-Detection/faster_rcnn_R_50_FPN_1x.yaml'
 
-    # args.video_input='/Users/diegosepulveda/Documents/diego/dev/ML/Cams/yolov7-object-tracking/CONCEPCION_CH1_PARTE1.mp4'
-    # args.output=f"demo/CONCEPCION_CH1_PARTE1{str(opt.track_thresh)}_{str(opt.track_buffer)}_{str(opt.match_thresh)}.mp4"
+    #VIDEO INPUT
+    VIDEO_INPUT = '/Users/diegosepulveda/Documents/diego/dev/ML/DataSets/Footage/CONCE_TEST_TRACK_ID_BENCHMARK_SHORT_2.mp4'
+    args.video_input=VIDEO_INPUT
 
+    base_filename = os.path.basename(VIDEO_INPUT)
+    filename_without_extension = os.path.splitext(base_filename)[0]
+    OUTPUT_FILE=f"demo/{filename_without_extension}{str(opt.track_thresh)}_{str(opt.track_buffer)}_{str(opt.match_thresh)}.mp4" 
 
     if os.path.exists(OUTPUT_FILE):
         current_date = datetime.datetime.now().strftime("%Y_%m_%d_%H:%M:%S")
         OUTPUT_FILE = f"{OUTPUT_FILE.replace('.mp4', '')}_{current_date}.mp4"
-    args.output=OUTPUT_FILE
+    # args.output=OUTPUT_FILE
     args.opts=['MODEL.DEVICE', 'cpu']
     # args.opts=['INPUT.MAX_SIZE_TEST', 1920] # Test Diego
+
     #### DEBUG ####
 
 

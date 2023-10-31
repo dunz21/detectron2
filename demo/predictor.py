@@ -24,43 +24,43 @@ COLORS_10 =[(144,238,144),(178, 34, 34),(221,160,221),(  0,255,  0),(  0,128,  0
             (102,205,170),( 60,179,113),( 46,139, 87),(165, 42, 42),(178, 34, 34),(175,238,238),(255,248,220),
             (218,165, 32),(255,250,240),(253,245,230),(244,164, 96),(210,105, 30)]
 
-def draw_bboxes(img, bbox, identities=None, offset=(0,0), num_frame=0):
+def draw_bboxes(img, bbox, offset=(0,0), num_frame=0):
     for i,box in enumerate(bbox):
-        x1,y1,x2,y2 = [int(i) for i in box]
+        x1,y1,x2,y2,id = [int(i) for i in box]
         x1 += offset[0]
         x2 += offset[0]
         y1 += offset[1]
         y2 += offset[1]
-        id = int(identities[i]) if identities is not None else 0
-        if num_frame % 10 == 0:
-            try:
-                sub_frame = img[int(y1):int(y2),int(x1):int(x2)]
-                save_image_based_on_sub_frame(num_frame=num_frame,sub_frame=sub_frame,box=box,id=id)
-            except Exception as e:
-                print(f"Error encountered: {e}")
         # box text and bar
         color = COLORS_10[id%len(COLORS_10)]
         label = '{}{:d}'.format("", id)
         t_size = cv2.getTextSize(label, cv2.FONT_HERSHEY_PLAIN, 2 , 2)[0]
-        # cv2.rectangle(img,(x1, y1),(x2,y2),color,3)
-        # cv2.rectangle(img,(x1, y1),(x1+t_size[0]+3,y1+t_size[1]+4), color,-1)
-        # cv2.putText(img,label,(x1,y1+t_size[1]+4), cv2.FONT_HERSHEY_PLAIN, 2, [255,255,255], 2)
+        
+        cv2.rectangle(img,(x1, y1),(x2,y2),color,3)
+        cv2.rectangle(img,(x1, y1),(x1+t_size[0]+3,y1+t_size[1]+4), color,-1)
+        cv2.putText(img,label,(x1,y1+t_size[1]+4), cv2.FONT_HERSHEY_PLAIN, 2, [255,255,255], 2)
     return img
 
-def save_image_based_on_sub_frame(num_frame, sub_frame, id,box, name='images_subframe'):
-    # Convert BGR to RGB
-    sub_frame_rgb = cv2.cvtColor(sub_frame, cv2.COLOR_BGR2RGB)
-    
-    id_directory = os.path.join(f"{name}", str(id))
-    if not os.path.exists(id_directory):
-        os.makedirs(id_directory)
-    image_name = f"img_{id}_{num_frame}_{int(box[0])}_{int(box[1])}_{int(box[2])}_{int(box[3])}.png"
-    save_path = os.path.join(id_directory, image_name)
-    
-    # Save the RGB image
-    cv2.imwrite(save_path, sub_frame_rgb)
-    
-    return image_name
+def save_image_based_on_sub_frame(num_frame, img, id,boxes, frame_step=10,name='images_subframe'):
+    if num_frame % frame_step == 0:
+        for i,box in enumerate(boxes):    
+            x1,y1,x2,y2,id = [int(i) for i in box]
+            sub_frame = img[y1:y2,x1:x2].copy()
+
+            # Convert BGR to RGB
+            sub_frame_rgb = cv2.cvtColor(sub_frame, cv2.COLOR_BGR2RGB)
+            
+            id_directory = os.path.join(f"{name}", str(id))
+            if not os.path.exists(id_directory):
+                os.makedirs(id_directory)
+            image_name = f"img_{id}_{num_frame}_{x1}_{y1}_{x2}_{y2}.png"
+            save_path = os.path.join(id_directory, image_name)
+            
+            # Save the RGB image
+            try:
+                cv2.imwrite(save_path, sub_frame_rgb)
+            except Exception as e:
+                print(f"Error encountered: {e}")
 
 class VisualizationDemo:
     def __init__(self, cfg, instance_mode=ColorMode.IMAGE, parallel=False, tracker=None):
@@ -162,18 +162,14 @@ class VisualizationDemo:
                 dets_to_sort = torch.cat((predictions.pred_boxes.tensor,predictions.scores.unsqueeze(1), predictions.pred_classes.unsqueeze(1)),dim=1).numpy()
                 dets_to_sort = dets_to_sort[dets_to_sort[:, 5] == 0.0]
 
-                #SORT
-                # tracked_dets = self.sort_tracker.update(dets_to_sort)
-                # bboxes = tracked_dets[:,:4]
-                # identities = tracked_dets[:, -1]
-
                 # BYTE TRACK
                 online_targets = self.tracker.update(dets_to_sort[:,:5],frame.shape,frame.shape)
-                bboxes = [obj.tlbr for obj in online_targets]
                 identities = [obj.track_id for obj in online_targets]
-                frame = draw_bboxes(frame,bboxes,identities,num_frame=num_frame)
+                bboxes = [np.concatenate((obj.tlbr,[identity])) for obj, identity in zip(online_targets, identities)]
+                
+                save_image_based_on_sub_frame(num_frame=num_frame,img=frame,boxes=bboxes,id=id)
+                frame = draw_bboxes(frame,bboxes,num_frame=num_frame)
                 vis_frame = video_visualizer.draw_instance_predictions(frame, [])
-                # vis_frame = video_visualizer.draw_instance_predictions(frame, predictions)
             elif "sem_seg" in predictions:
                 vis_frame = video_visualizer.draw_sem_seg(
                     frame, predictions["sem_seg"].argmax(dim=0).to(self.cpu_device)
