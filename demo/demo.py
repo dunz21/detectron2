@@ -116,7 +116,7 @@ if __name__ == "__main__":
     args.config_file='configs/COCO-Detection/faster_rcnn_R_50_FPN_1x.yaml'
 
     #VIDEO INPUT
-    VIDEO_INPUT = '/Users/diegosepulveda/Documents/diego/dev/ML/DataSets/Footage/CONCE_TEST_TRACK_ID_BENCHMARK_SHORT_2.mp4'
+    VIDEO_INPUT = '/Users/diegosepulveda/Documents/diego/dev/ML/DataSets/Footage/CONCE_TEST_TRACK_ID_BENCHMARK_SHORT.mp4'
     args.video_input=VIDEO_INPUT
 
     base_filename = os.path.basename(VIDEO_INPUT)
@@ -126,7 +126,7 @@ if __name__ == "__main__":
     if os.path.exists(OUTPUT_FILE):
         current_date = datetime.datetime.now().strftime("%Y_%m_%d_%H:%M:%S")
         OUTPUT_FILE = f"{OUTPUT_FILE.replace('.mp4', '')}_{current_date}.mp4"
-    # args.output=OUTPUT_FILE
+    args.output=OUTPUT_FILE
     args.opts=['MODEL.DEVICE', 'cpu']
     # args.opts=['INPUT.MAX_SIZE_TEST', 1920] # Test Diego
 

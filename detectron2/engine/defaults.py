@@ -287,11 +287,8 @@ class DefaultPredictor:
         checkpointer = DetectionCheckpointer(self.model)
         checkpointer.load(cfg.MODEL.WEIGHTS)
 
-        # self.aug = T.ResizeShortestEdge(
-        #     [cfg.INPUT.MIN_SIZE_TEST, cfg.INPUT.MIN_SIZE_TEST], cfg.INPUT.MAX_SIZE_TEST
-        # )
         self.aug = T.ResizeShortestEdge(
-            [1920, 1920], cfg.INPUT.MAX_SIZE_TEST
+            [cfg.INPUT.MIN_SIZE_TEST, cfg.INPUT.MIN_SIZE_TEST], cfg.INPUT.MAX_SIZE_TEST
         )
         self.input_format = cfg.INPUT.FORMAT
         assert self.input_format in ["RGB", "BGR"], self.input_format
@@ -306,7 +303,7 @@ class DefaultPredictor:
                 the output of the model for one image only.
                 See :doc:`/tutorials/models` for details about the format.
         """
-        with torch.no_grad():  # https://github.com/sphinx-doc/sphinx/issues/4258
+        with torch.inference_mode():  # https://github.com/sphinx-doc/sphinx/issues/4258
             # Apply pre-processing to image.
             if self.input_format == "RGB":
                 # whether the model expects BGR inputs or RGB

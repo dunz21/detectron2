@@ -26,14 +26,14 @@ COLORS_10 =[(144,238,144),(178, 34, 34),(221,160,221),(  0,255,  0),(  0,128,  0
 
 def draw_bboxes(img, bbox, offset=(0,0), num_frame=0):
     for i,box in enumerate(bbox):
-        x1,y1,x2,y2,id = [int(i) for i in box]
+        x1,y1,x2,y2,id, _ = [int(i) for i in box]
         x1 += offset[0]
         x2 += offset[0]
         y1 += offset[1]
         y2 += offset[1]
         # box text and bar
         color = COLORS_10[id%len(COLORS_10)]
-        label = '{}{:d}'.format("", id)
+        label = '{:d} {:.2f}'.format(id,box[5])
         t_size = cv2.getTextSize(label, cv2.FONT_HERSHEY_PLAIN, 2 , 2)[0]
         
         cv2.rectangle(img,(x1, y1),(x2,y2),color,3)
@@ -44,7 +44,7 @@ def draw_bboxes(img, bbox, offset=(0,0), num_frame=0):
 def save_image_based_on_sub_frame(num_frame, img, id,boxes, frame_step=10,name='images_subframe'):
     if num_frame % frame_step == 0:
         for i,box in enumerate(boxes):    
-            x1,y1,x2,y2,id = [int(i) for i in box]
+            x1,y1,x2,y2,id,_ = [int(i) for i in box]
             sub_frame = img[y1:y2,x1:x2].copy()
 
             # Convert BGR to RGB
@@ -53,7 +53,7 @@ def save_image_based_on_sub_frame(num_frame, img, id,boxes, frame_step=10,name='
             id_directory = os.path.join(f"{name}", str(id))
             if not os.path.exists(id_directory):
                 os.makedirs(id_directory)
-            image_name = f"img_{id}_{num_frame}_{x1}_{y1}_{x2}_{y2}.png"
+            image_name = f"img_{id}_{num_frame}_{x1}_{y1}_{x2}_{y2}_{box[5]:.2f}.png"
             save_path = os.path.join(id_directory, image_name)
             
             # Save the RGB image
@@ -165,10 +165,12 @@ class VisualizationDemo:
                 # BYTE TRACK
                 online_targets = self.tracker.update(dets_to_sort[:,:5],frame.shape,frame.shape)
                 identities = [obj.track_id for obj in online_targets]
-                bboxes = [np.concatenate((obj.tlbr,[identity])) for obj, identity in zip(online_targets, identities)]
+                scores = [obj.score for obj in online_targets]
+                bboxes = [np.concatenate((obj.tlbr,[identity],[score])) for obj, identity, score in zip(online_targets, identities,scores)]
                 
                 save_image_based_on_sub_frame(num_frame=num_frame,img=frame,boxes=bboxes,id=id)
                 frame = draw_bboxes(frame,bboxes,num_frame=num_frame)
+                return frame
                 vis_frame = video_visualizer.draw_instance_predictions(frame, [])
             elif "sem_seg" in predictions:
                 vis_frame = video_visualizer.draw_sem_seg(
