@@ -1,6 +1,6 @@
 _BASE_: "../Base-RCNN-FPN.yaml"
 MODEL:
-  WEIGHTS: "/Users/diegosepulveda/Downloads/model_final_b275ba.pkl" #2.5
+  WEIGHTS: "/home/diego/Documents/Weights/Detectron2/model_final_b275ba.pkl" #2.5
   MASK_ON: False
   RESNETS:
     DEPTH: 50
