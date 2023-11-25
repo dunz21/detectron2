@@ -117,6 +117,7 @@ if __name__ == "__main__":
 
     #VIDEO INPUT
     VIDEO_INPUT = 'mini_conce.mp4'
+    # VIDEO_INPUT = 'mini_conce_salida.mp4'
     args.video_input=VIDEO_INPUT
 
     base_filename = os.path.basename(VIDEO_INPUT)
@@ -174,6 +175,9 @@ if __name__ == "__main__":
             else:
                 cv2.namedWindow(basename, cv2.WINDOW_NORMAL)
                 cv2.imshow(basename, vis_frame)
+                # key = cv2.waitKey(0)
+                # if key == 27: # If 'ESC' is pressed, break the loop
+                #     break
                 if cv2.waitKey(1) == 27:
                     break  # esc to quit
         video.release()

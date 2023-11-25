@@ -22,6 +22,9 @@ class STrack(BaseTrack):
 
         self.score = score
         self.tracklet_len = 0
+        self.max_len_history = 30
+        self.history = deque(maxlen=self.max_len_history)  # store the last 10 positions
+
 
     def predict(self):
         mean_state = self.mean.copy()
@@ -67,6 +70,12 @@ class STrack(BaseTrack):
         if new_id:
             self.track_id = self.next_id()
         self.score = new_track.score
+    
+    def get_previous_position(self):
+        if self.history:
+            return self.history[-1]
+        else:
+            return None
 
     def update(self, new_track, frame_id):
         """
@@ -78,6 +87,7 @@ class STrack(BaseTrack):
         """
         self.frame_id = frame_id
         self.tracklet_len += 1
+        self.history.append(self.tlwh.copy())
 
         new_tlwh = new_track.tlwh
         self.mean, self.covariance = self.kalman_filter.update(

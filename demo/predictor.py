@@ -11,7 +11,7 @@ from detectron2.engine.defaults import DefaultPredictor
 from detectron2.utils.video_visualizer import VideoVisualizer
 from detectron2.utils.visualizer import ColorMode, Visualizer
 from sort import *
-from tools.diego_tools import draw_bboxes,save_image_based_on_sub_frame,filter_detections_inside_polygon
+from tools.draw_tools import draw_bboxes,save_image_based_on_sub_frame,filter_detections_inside_polygon,draw_boxes_entrance_exit,find_polygons_for_centroids
 
 
 class VisualizationDemo:
@@ -28,20 +28,7 @@ class VisualizationDemo:
         )
         self.cpu_device = torch.device("cpu")
         self.instance_mode = instance_mode
-        
-        ### SORT ###
-        # sort_max_age = 100000
-        # sort_min_hits = 2
-        # sort_iou_thresh = 0.2
-        # self.sort_tracker = Sort(max_age=sort_max_age,
-        #                     min_hits=sort_min_hits,
-        #                     iou_threshold=sort_iou_thresh)
-        ### SORT ###
-
         self.tracker = tracker
-        
-
-
         self.parallel = parallel
         if parallel:
             num_gpu = torch.cuda.device_count()
@@ -110,23 +97,28 @@ class VisualizationDemo:
                 )
             elif "instances" in predictions:
                 predictions = predictions["instances"].to(self.cpu_device)
-
+                original_frame = frame.copy()
                 dets_to_sort = torch.cat((predictions.pred_boxes.tensor,predictions.scores.unsqueeze(1), predictions.pred_classes.unsqueeze(1)),dim=1).numpy()
                 dets_to_sort = dets_to_sort[dets_to_sort[:, 5] == 0.0] #Filter only class 0
                 dets_to_sort = filter_detections_inside_polygon(detections=dets_to_sort)
                 # BYTE TRACK
+                polygons = draw_boxes_entrance_exit(frame)
                 if(len(dets_to_sort) > 0):
                     online_targets = self.tracker.update(dets_to_sort[:,:5],frame.shape,frame.shape)
                     identities = [obj.track_id for obj in online_targets]
                     scores = [obj.score for obj in online_targets]
                     bboxes = [np.concatenate((obj.tlbr,[identity],[score])) for obj, identity, score in zip(online_targets, identities,scores)]            
-                    save_image_based_on_sub_frame(num_frame=num_frame,img=frame,boxes=bboxes,id=id)
                     frame = draw_bboxes(frame,bboxes,num_frame=num_frame)
-                
+                    if online_targets.__len__() > 0:
+                        for target in online_targets:
+                            polygons_indexes = find_polygons_for_centroids(target.history,polygons,frame,target.max_len_history)
+                            if polygons_indexes is not None:
+                                if polygons_indexes['direction'] is not None and polygons_indexes['between_polygons'] is not None:
+                                    one_person = np.concatenate((target.tlbr, [target.track_id, target.score]))
+                                    save_image_based_on_sub_frame(num_frame=num_frame,img=original_frame,boxes=[one_person],frame_step=5,directory_name='entance-exit',direction=polygons_indexes['direction'])
+                            
                 # For Feedback purpose
-                pts = np.array([[0,1080],[0,800],[488,561],[593,523],[603,635],[632,653],[932,535],[978,621],[756,918],[764,1080]], np.int32)
-                pts = pts.reshape((-1, 1, 2))
-                cv2.polylines(frame, [pts], isClosed=True, color=(0, 0, 255), thickness=5)
+                
                 return frame
                 vis_frame = video_visualizer.draw_instance_predictions(frame, [])
             elif "sem_seg" in predictions:
