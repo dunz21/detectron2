@@ -11,7 +11,7 @@ from detectron2.engine.defaults import DefaultPredictor
 from detectron2.utils.video_visualizer import VideoVisualizer
 from detectron2.utils.visualizer import ColorMode, Visualizer
 from sort import *
-from tools.draw_tools import draw_bboxes,save_image_based_on_sub_frame,filter_detections_inside_polygon,draw_boxes_entrance_exit,find_polygons_for_centroids,calculate_direction,draw_on_frame,create_image_banner
+from tools.draw_tools import draw_bboxes,save_image_based_on_sub_frame,filter_detections_inside_polygon,draw_boxes_entrance_exit,find_polygons_for_centroids,calculate_direction,create_image_banner
 from tools.PersonImageComparer import PersonImageComparer
 from tools.PersonImage import PersonImage
 import re
@@ -116,32 +116,39 @@ class VisualizationDemo:
                         for target in online_targets:
                             polygons_indexes = find_polygons_for_centroids(target.history,polygons,frame,target.max_len_history)
                             if polygons_indexes is not None:
-                                if polygons_indexes['direction'] is not None and polygons_indexes['between_polygons'] is not None:
+                                direction = polygons_indexes['direction']
+                                if direction is not None and polygons_indexes['between_polygons'] is not None:
                                     one_person = np.concatenate((target.tlbr, [target.track_id, target.score]))
-                                    save_image_based_on_sub_frame(num_frame=num_frame,img=original_frame,boxes=[one_person],frame_step=5,directory_name=FOLDER_PATH,direction=polygons_indexes['direction'])
+                                    save_image_based_on_sub_frame(num_frame=num_frame,img=original_frame,boxes=[one_person],frame_step=5,directory_name=FOLDER_PATH,direction=direction)
+                        # Este proceso solo deberia correr cuando ya tengo las imagenes guardadas....
+                        # Y tengo las imagenes guardadas cuando la persona cruza de un polygono a otro, y la logica es sacarles fotos entre medio de los poligonos
                         # This will run after all the persons have been processeds
                         for target in online_targets:
-                            if target.history.__len__() == target.max_len_history:
-                                polygons_indexes = find_polygons_for_centroids(target.history,polygons,frame,target.max_len_history)
-                                if polygons_indexes is not None:
-                                    direction = polygons_indexes['direction']
-                                    if(direction is not None):
-                                        dir_path = os.path.join(FOLDER_PATH, str(target.track_id))
-                                        all_files = glob.glob(os.path.join(dir_path, '*'))
-                                        image_files = [file for file in all_files if os.path.splitext(file)[1].lower() in  ['.jpg', '.jpeg', '.png']]
-                                        PersonImageComparer.process_person_image(PersonImage(target.track_id,image_files , direction))
-                    draw_on_frame(frame,PersonImageComparer,num_frame=num_frame,frame_step=1)
-                dir_path = 'in-out/1'
-                all_files = glob.glob(os.path.join(dir_path, '*'))
-                def extract_id(filename):
-                    match = re.search(r'img_(\d+)', filename)
-                    if match:
-                        return int(match.group(1))
-                    else:
-                        return 0
-                image_files = sorted([file for file in all_files if os.path.splitext(file)[1].lower() in ['.png']],key=extract_id)
-                print(image_files)
-                create_image_banner(image_files, frame.shape[1], frame)
+                            # if target.history.__len__() == target.max_len_history: # Voy a sacar esta regla, por que al final igual se van a guardar solo los PersonImage que tengans fotos
+                            polygons_indexes = find_polygons_for_centroids(target.history,polygons,frame,target.max_len_history)
+                            if polygons_indexes is not None:
+                                direction = polygons_indexes['direction']
+                                if(direction is not None):
+                                    dir_path = os.path.join(FOLDER_PATH, str(target.track_id))
+                                    all_files = glob.glob(os.path.join(dir_path, '*'))
+                                    image_files = [file for file in all_files if os.path.splitext(file)[1].lower() in  ['.jpg', '.jpeg', '.png']]
+                                    PersonImageComparer.process_person_image(PersonImage(target.track_id,image_files , direction))
+                # Esto tiene que correr en cada frame para que apareza siempre, y esto nunca re calcula nada, solo pinta lo que tiene en memoria
+                if PersonImageComparer.list_banner_in is not None:
+                    frame[0:0+PersonImageComparer.list_banner_in.shape[0], 0:PersonImageComparer.list_banner_in.shape[1], :] = PersonImageComparer.list_banner_in
+                if PersonImageComparer.list_banner_out is not None:
+                    frame[100:100+PersonImageComparer.list_banner_out.shape[0], 0:PersonImageComparer.list_banner_out.shape[1], :] = PersonImageComparer.list_banner_out
+                # dir_path = 'in-out/1'
+                # all_files = glob.glob(os.path.join(dir_path, '*'))
+                # def extract_id(filename):
+                #     match = re.search(r'img_(\d+)', filename)
+                #     if match:
+                #         return int(match.group(1))
+                #     else:
+                #         return 0
+                # image_files = sorted([file for file in all_files if os.path.splitext(file)[1].lower() in ['.png']],key=extract_id)
+                # print(image_files)
+                # create_image_banner(image_files, frame.shape[1], frame)
                 # dir_path = 'in-out/55'
                 # all_files = glob.glob(os.path.join(dir_path, '*'))
                 # image_files = [file for file in all_files if os.path.splitext(file)[1].lower() in ['.png']]

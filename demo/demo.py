@@ -176,9 +176,9 @@ if __name__ == "__main__":
             else:
                 cv2.namedWindow(basename, cv2.WINDOW_NORMAL)
                 cv2.imshow(basename, vis_frame)
-                key = cv2.waitKey(0)
-                if key == 27: # If 'ESC' is pressed, break the loop
-                    break
+                # key = cv2.waitKey(0)
+                # if key == 27: # If 'ESC' is pressed, break the loop
+                #     break
                 if cv2.waitKey(1) == 27:
                     break  # esc to quit
         video.release()

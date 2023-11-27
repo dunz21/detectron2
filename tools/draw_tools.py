@@ -183,47 +183,6 @@ def between_polygons(arr):
     return count_ones == count_zeros
 
 
-
-
-def draw_on_frame(frame, PersonImageComparer, num_frame=1, frame_step=10):
-    if num_frame % frame_step == 0:
-        if PersonImageComparer.list_in == [] and PersonImageComparer.list_out == []:
-            return frame
-        
-        height, width, _ = frame.shape
-
-        # Define the height for the area to draw on (20% of the frame's height)
-        draw_height = int(height * 0.1)
-
-        # Define the size for the images (15% of their original size)
-        img_size = (int(width * 0.0375), int(draw_height * 0.75))
-
-        # Define the starting Y positions for the first and second row
-        y_start_first_row = int(height * 0.05)  # 5% from the top of the frame
-        y_start_second_row = int(height * 0.125)  # Below the first row
-
-        # X position to start placing images
-        x_pos = 10  # Start 10 pixels from the left
-        print((y_start_first_row,y_start_first_row+img_size[1], x_pos,x_pos+img_size[0]))
-        # Load, resize, and paste the images from the first list
-        for personImage in PersonImageComparer.list_in:
-            img = cv2.imread(personImage.list_images[0])
-            img = cv2.resize(img, img_size)
-            frame[y_start_first_row:y_start_first_row+img_size[1], x_pos:x_pos+img_size[0]] = img
-            # x_pos += img_size[0] + 10  # Move right for the next image
-
-        # Reset X position for the second row and leave some space
-        x_pos = 10
-
-        # Load, resize, and paste the images from the second list
-        for personImage in PersonImageComparer.list_out:
-            img = cv2.imread(personImage.list_images[0])
-            img = cv2.resize(img, img_size)
-            frame[y_start_second_row:y_start_second_row+img_size[1], x_pos:x_pos+img_size[0]] = img
-            # x_pos += img_size[0] + 10  # Move right for the next image
-
-    return frame
-
 def add_white_banner(frame, banner_height_percentage=15):
     """
     Add a white banner on top of an image.
@@ -253,6 +212,8 @@ def add_white_banner(frame, banner_height_percentage=15):
 def create_image_banner(image_paths, max_width, frame, offset=0):
     # Fixed size for all images
     fixed_width, fixed_height = 50, 100
+
+    # (height, width, channels) = frame.shape
 
     # Load and resize images to the fixed size
     resized_images = []
