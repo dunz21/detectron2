@@ -1,6 +1,7 @@
 import cv2
 import os
 import numpy as np
+from PIL import Image
 
 COLORS_10 =[(144,238,144),(178, 34, 34),(221,160,221),(  0,255,  0),(  0,128,  0),(210,105, 30),(220, 20, 60),
             (192,192,192),(255,228,196),( 50,205, 50),(139,  0,139),(100,149,237),(138, 43,226),(238,130,238),
@@ -134,7 +135,7 @@ def find_polygons_for_centroids(history_deque, polygons, frame, max_len_history)
     return {
         'polygon_indices': polygon_indices,
         'direction': calculate_direction(polygon_indices),
-        'between_polygons': between_polygons(polygon_indices),
+        'between_polygons': between_polygons(polygon_indices), # La idea es para sacar fotos justo cuando este en una transicion. Revisar que funcione
     }
 
 def calculate_direction(polygon_indices):
@@ -149,10 +150,10 @@ def calculate_direction(polygon_indices):
         if polygon_indices[i] != polygon_indices[i + 1]:
             # Return '10' if the transition is from 1 to 0
             if polygon_indices[i] == 1:
-                return 'Entrance'
+                return 'In'
             # Return '01' if the transition is from 0 to 1
             else:
-                return 'Exit'
+                return 'Out'
     # Return 'No transition found' if there is no transition in the array
     return None
 
@@ -180,3 +181,133 @@ def between_polygons(arr):
     
     # Check if they are equal
     return count_ones == count_zeros
+
+
+
+
+def draw_on_frame(frame, PersonImageComparer, num_frame=1, frame_step=10):
+    if num_frame % frame_step == 0:
+        if PersonImageComparer.list_in == [] and PersonImageComparer.list_out == []:
+            return frame
+        
+        height, width, _ = frame.shape
+
+        # Define the height for the area to draw on (20% of the frame's height)
+        draw_height = int(height * 0.1)
+
+        # Define the size for the images (15% of their original size)
+        img_size = (int(width * 0.0375), int(draw_height * 0.75))
+
+        # Define the starting Y positions for the first and second row
+        y_start_first_row = int(height * 0.05)  # 5% from the top of the frame
+        y_start_second_row = int(height * 0.125)  # Below the first row
+
+        # X position to start placing images
+        x_pos = 10  # Start 10 pixels from the left
+        print((y_start_first_row,y_start_first_row+img_size[1], x_pos,x_pos+img_size[0]))
+        # Load, resize, and paste the images from the first list
+        for personImage in PersonImageComparer.list_in:
+            img = cv2.imread(personImage.list_images[0])
+            img = cv2.resize(img, img_size)
+            frame[y_start_first_row:y_start_first_row+img_size[1], x_pos:x_pos+img_size[0]] = img
+            # x_pos += img_size[0] + 10  # Move right for the next image
+
+        # Reset X position for the second row and leave some space
+        x_pos = 10
+
+        # Load, resize, and paste the images from the second list
+        for personImage in PersonImageComparer.list_out:
+            img = cv2.imread(personImage.list_images[0])
+            img = cv2.resize(img, img_size)
+            frame[y_start_second_row:y_start_second_row+img_size[1], x_pos:x_pos+img_size[0]] = img
+            # x_pos += img_size[0] + 10  # Move right for the next image
+
+    return frame
+
+def add_white_banner(frame, banner_height_percentage=15):
+    """
+    Add a white banner on top of an image.
+
+    Parameters:
+    - frame: The original image as a numpy array.
+    - banner_height_percentage: The height of the banner as a percentage of the frame's height.
+
+    Returns:
+    - Modified image with the white banner.
+    """
+
+    # Calculate the height of the banner in pixels
+    banner_height = int(frame.shape[0] * banner_height_percentage / 100)
+
+    # Create a white rectangle
+    white_banner = np.full((banner_height, frame.shape[1], 3), 255, dtype=np.uint8)
+
+    # Concatenate the white banner with the original image
+    frame_with_banner = np.vstack((white_banner, frame[banner_height:]))
+
+    # frame_with_banner = frame.copy()
+    frame[:banner_height, :, :] = white_banner
+
+    return frame_with_banner
+
+def create_image_banner(image_paths, max_width, frame, offset=0):
+    # Fixed size for all images
+    fixed_width, fixed_height = 50, 100
+
+    # Load and resize images to the fixed size
+    resized_images = []
+    for path in image_paths:
+        img = cv2.imread(path)
+        if img is not None:
+            resized_img = cv2.resize(img, (fixed_width, fixed_height))
+            resized_images.append(resized_img)
+
+    # Concatenate images into a banner
+    banner = None
+    current_width = 0
+    offset_overlay = 0
+    for img in resized_images:
+        if banner is None:
+            banner = img
+            current_width += img.shape[1]
+        else:
+            if current_width + img.shape[1] <= max_width:
+                banner = np.hstack((banner, img))
+                current_width += img.shape[1]
+            else:
+                # Fill the remaining space in the current row with white if needed
+
+                    # remaining_space = np.full((fixed_height, max_width - current_width, 3), 255, dtype=np.uint8)
+                    # banner = np.hstack((banner, remaining_space))
+                
+                banner[:, offset_overlay:offset_overlay+img.shape[1], :] = img
+                if offset_overlay + img.shape[1] >= max_width:
+                    offset_overlay = 0
+                else:
+                    offset_overlay += img.shape[1]
+                
+                
+                # # Reset current_width to 0
+                # current_width = 0
+
+                # # Start a new row with the current image
+                # new_row = img
+                # banner = np.vstack((banner, new_row))
+                # current_width += img.shape[1]
+
+    # Fill the remaining space in the last row with white if needed
+    if current_width < max_width:
+        remaining_space = np.full((fixed_height, max_width - current_width, 3), 255, dtype=np.uint8)
+        banner = np.hstack((banner, remaining_space))
+
+    # Check if the widths are the same
+    if frame.shape[1] != banner.shape[1]:
+        raise ValueError("Width of frame and banner must be the same")
+
+    # Height of the banner
+    banner_height = banner.shape[0]
+
+    # Replace the top part of the frame with the banner
+    frame[offset:offset+banner_height, :, :] = banner
+
+    return banner

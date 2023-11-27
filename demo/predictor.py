@@ -11,8 +11,10 @@ from detectron2.engine.defaults import DefaultPredictor
 from detectron2.utils.video_visualizer import VideoVisualizer
 from detectron2.utils.visualizer import ColorMode, Visualizer
 from sort import *
-from tools.draw_tools import draw_bboxes,save_image_based_on_sub_frame,filter_detections_inside_polygon,draw_boxes_entrance_exit,find_polygons_for_centroids
-
+from tools.draw_tools import draw_bboxes,save_image_based_on_sub_frame,filter_detections_inside_polygon,draw_boxes_entrance_exit,find_polygons_for_centroids,calculate_direction,draw_on_frame,create_image_banner
+from tools.PersonImageComparer import PersonImageComparer
+from tools.PersonImage import PersonImage
+import re
 
 class VisualizationDemo:
     def __init__(self, cfg, instance_mode=ColorMode.IMAGE, parallel=False, tracker=None):
@@ -110,13 +112,41 @@ class VisualizationDemo:
                     bboxes = [np.concatenate((obj.tlbr,[identity],[score])) for obj, identity, score in zip(online_targets, identities,scores)]            
                     frame = draw_bboxes(frame,bboxes,num_frame=num_frame)
                     if online_targets.__len__() > 0:
+                        FOLDER_PATH='in-out'
                         for target in online_targets:
                             polygons_indexes = find_polygons_for_centroids(target.history,polygons,frame,target.max_len_history)
                             if polygons_indexes is not None:
                                 if polygons_indexes['direction'] is not None and polygons_indexes['between_polygons'] is not None:
                                     one_person = np.concatenate((target.tlbr, [target.track_id, target.score]))
-                                    save_image_based_on_sub_frame(num_frame=num_frame,img=original_frame,boxes=[one_person],frame_step=5,directory_name='entance-exit',direction=polygons_indexes['direction'])
-                            
+                                    save_image_based_on_sub_frame(num_frame=num_frame,img=original_frame,boxes=[one_person],frame_step=5,directory_name=FOLDER_PATH,direction=polygons_indexes['direction'])
+                        # This will run after all the persons have been processeds
+                        for target in online_targets:
+                            if target.history.__len__() == target.max_len_history:
+                                polygons_indexes = find_polygons_for_centroids(target.history,polygons,frame,target.max_len_history)
+                                if polygons_indexes is not None:
+                                    direction = polygons_indexes['direction']
+                                    if(direction is not None):
+                                        dir_path = os.path.join(FOLDER_PATH, str(target.track_id))
+                                        all_files = glob.glob(os.path.join(dir_path, '*'))
+                                        image_files = [file for file in all_files if os.path.splitext(file)[1].lower() in  ['.jpg', '.jpeg', '.png']]
+                                        PersonImageComparer.process_person_image(PersonImage(target.track_id,image_files , direction))
+                    draw_on_frame(frame,PersonImageComparer,num_frame=num_frame,frame_step=1)
+                dir_path = 'in-out/1'
+                all_files = glob.glob(os.path.join(dir_path, '*'))
+                def extract_id(filename):
+                    match = re.search(r'img_(\d+)', filename)
+                    if match:
+                        return int(match.group(1))
+                    else:
+                        return 0
+                image_files = sorted([file for file in all_files if os.path.splitext(file)[1].lower() in ['.png']],key=extract_id)
+                print(image_files)
+                create_image_banner(image_files, frame.shape[1], frame)
+                # dir_path = 'in-out/55'
+                # all_files = glob.glob(os.path.join(dir_path, '*'))
+                # image_files = [file for file in all_files if os.path.splitext(file)[1].lower() in ['.png']]
+                # create_image_banner(image_files, frame.shape[1], frame,100)
+                
                 # For Feedback purpose
                 
                 return frame

@@ -105,7 +105,7 @@ if __name__ == "__main__":
         def __init__(self):
             self.track_thresh=0.6
             self.track_buffer=160
-            self.match_thresh=0.95
+            self.match_thresh=0.95 
             self.mot20=False
     opt = Options()
     tracker = BYTETracker(opt)
@@ -116,6 +116,7 @@ if __name__ == "__main__":
     args.config_file='configs/COCO-Detection/faster_rcnn_R_50_FPN_1x.yaml'
 
     #VIDEO INPUT
+    # VIDEO_INPUT = '/home/diego/Documents/Footage/CONCEPCION_CH1.mp4'
     VIDEO_INPUT = 'mini_conce.mp4'
     # VIDEO_INPUT = 'mini_conce_salida.mp4'
     args.video_input=VIDEO_INPUT
@@ -175,9 +176,9 @@ if __name__ == "__main__":
             else:
                 cv2.namedWindow(basename, cv2.WINDOW_NORMAL)
                 cv2.imshow(basename, vis_frame)
-                # key = cv2.waitKey(0)
-                # if key == 27: # If 'ESC' is pressed, break the loop
-                #     break
+                key = cv2.waitKey(0)
+                if key == 27: # If 'ESC' is pressed, break the loop
+                    break
                 if cv2.waitKey(1) == 27:
                     break  # esc to quit
         video.release()
