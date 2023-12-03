@@ -123,14 +123,14 @@ def find_polygons_for_centroids(history_deque, polygons, frame, max_len_history)
         found_in_polygon = False
         for i, polygon in enumerate(polygons):
             if is_point_in_polygon(centroid, polygon):
-                cv2.circle(frame, tuple(centroid.astype(int)), 4, COLORS_10[i], -1)
+                # cv2.circle(frame, tuple(centroid.astype(int)), 4, COLORS_10[i], -1)
                 polygon_indices.append(i)
                 found_in_polygon = True
                 # break
 
     if not found_in_polygon:
         return None
-    cv2.arrowedLine(frame, tuple(centroids[0].astype(int)), tuple(centroids[-1].astype(int)), (255, 0, 0), 2, tipLength=0.3)
+    # cv2.arrowedLine(frame, tuple(centroids[0].astype(int)), tuple(centroids[-1].astype(int)), (255, 0, 0), 2, tipLength=0.3)
 
     return {
         'polygon_indices': polygon_indices,

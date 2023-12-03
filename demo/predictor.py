@@ -114,25 +114,40 @@ class VisualizationDemo:
                     if online_targets.__len__() > 0:
                         FOLDER_PATH='in-out'
                         for target in online_targets:
-                            polygons_indexes = find_polygons_for_centroids(target.history,polygons,frame,target.max_len_history)
-                            if polygons_indexes is not None:
-                                direction = polygons_indexes['direction']
-                                if direction is not None and polygons_indexes['between_polygons'] is not None:
-                                    one_person = np.concatenate((target.tlbr, [target.track_id, target.score]))
-                                    save_image_based_on_sub_frame(num_frame=num_frame,img=original_frame,boxes=[one_person],frame_step=5,directory_name=FOLDER_PATH,direction=direction)
+                            new_person = PersonImage(target.track_id, [], None,target.history)
+                            result = new_person.find_polygons_for_centroids(polygons)
+                            if target.track_id == 3:
+                                print(result)
+                            if result is not None:
+                                direction = result['direction']
+                                if direction is not None:
+                                    if result['exit'] == False:
+                                        one_person = np.concatenate((target.tlbr, [target.track_id, target.score]))
+                                        save_image_based_on_sub_frame(num_frame=num_frame,img=original_frame,boxes=[one_person],frame_step=5,directory_name=FOLDER_PATH,direction=direction)
+                                    else:
+                                        # Va a entrar aca cuando ya haya guardado todas las fotos y la persona haya salido de los poligonos
+                                        dir_path = os.path.join(FOLDER_PATH, str(target.track_id))
+                                        all_files = glob.glob(os.path.join(dir_path, '*'))
+                                        image_files = [file for file in all_files if os.path.splitext(file)[1].lower() in  ['.jpg', '.jpeg', '.png']]
+                                        PersonImageComparer.process_person_image(PersonImage(target.track_id,image_files,direction,target.history))
+                                
                         # Este proceso solo deberia correr cuando ya tengo las imagenes guardadas....
                         # Y tengo las imagenes guardadas cuando la persona cruza de un polygono a otro, y la logica es sacarles fotos entre medio de los poligonos
                         # This will run after all the persons have been processeds
-                        for target in online_targets:
-                            # if target.history.__len__() == target.max_len_history: # Voy a sacar esta regla, por que al final igual se van a guardar solo los PersonImage que tengans fotos
-                            polygons_indexes = find_polygons_for_centroids(target.history,polygons,frame,target.max_len_history)
-                            if polygons_indexes is not None:
-                                direction = polygons_indexes['direction']
-                                if(direction is not None):
-                                    dir_path = os.path.join(FOLDER_PATH, str(target.track_id))
-                                    all_files = glob.glob(os.path.join(dir_path, '*'))
-                                    image_files = [file for file in all_files if os.path.splitext(file)[1].lower() in  ['.jpg', '.jpeg', '.png']]
-                                    PersonImageComparer.process_person_image(PersonImage(target.track_id,image_files , direction))
+                        # for target in online_targets:
+                        #     # if target.history.__len__() == target.max_len_history: # Voy a sacar esta regla, por que al final igual se van a guardar solo los PersonImage que tengans fotos
+                        #     if target.track_id == 3:
+                        #         new_person = PersonImage(target.track_id, [], None,target.history)
+                        #         result = new_person.find_polygons_for_centroids(polygons)
+                        #         print(result)
+                            # polygons_indexes = find_polygons_for_centroids(target.history,polygons,frame,target.max_len_history)
+                            # if polygons_indexes is not None:
+                            #     direction = polygons_indexes['direction']
+                            #     if(direction is not None):
+                            #         dir_path = os.path.join(FOLDER_PATH, str(target.track_id))
+                            #         all_files = glob.glob(os.path.join(dir_path, '*'))
+                            #         image_files = [file for file in all_files if os.path.splitext(file)[1].lower() in  ['.jpg', '.jpeg', '.png']]
+                            #         PersonImageComparer.process_person_image(PersonImage(target.track_id,image_files , direction))
                 # Esto tiene que correr en cada frame para que apareza siempre, y esto nunca re calcula nada, solo pinta lo que tiene en memoria
                 if PersonImageComparer.list_banner_in is not None:
                     frame[0:0+PersonImageComparer.list_banner_in.shape[0], 0:PersonImageComparer.list_banner_in.shape[1], :] = PersonImageComparer.list_banner_in

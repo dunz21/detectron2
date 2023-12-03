@@ -117,8 +117,9 @@ if __name__ == "__main__":
 
     #VIDEO INPUT
     # VIDEO_INPUT = '/home/diego/Documents/Footage/CONCEPCION_CH1.mp4'
-    VIDEO_INPUT = 'mini_conce.mp4'
-    # VIDEO_INPUT = 'mini_conce_salida.mp4'
+    # VIDEO_INPUT = '/home/diego/Documents/Footage/conce_semi_largo.mp4'
+    # VIDEO_INPUT = 'mini_conce.mp4'
+    VIDEO_INPUT = 'mini_conce_salida.mp4'
     args.video_input=VIDEO_INPUT
 
     base_filename = os.path.basename(VIDEO_INPUT)
@@ -128,7 +129,7 @@ if __name__ == "__main__":
     if os.path.exists(OUTPUT_FILE):
         current_date = datetime.datetime.now().strftime("%Y_%m_%d_%H:%M:%S")
         OUTPUT_FILE = f"{OUTPUT_FILE.replace('.mp4', '')}_{current_date}.mp4"
-    # args.output=OUTPUT_FILE
+    args.output=OUTPUT_FILE
     args.opts=['MODEL.DEVICE', 'cuda']
     # args.opts=['INPUT.MAX_SIZE_TEST', 1920] # Test Diego
 

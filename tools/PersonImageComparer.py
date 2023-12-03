@@ -24,11 +24,13 @@ class PersonImageComparer:
                 if not any(p.id == person_image.id for p in cls.list_in):
                     cls.list_in.append(person_image)
                     cls.add_image_to_banner(person_image.list_images[0], person_image.direction)
+                    print(f"Number of images of ID {person_image.id} {person_image.list_images.__len__()}")
             elif person_image.direction == "Out":
                 # Check if person_image is not already in cls.list_out
                 if not any(p.id == person_image.id for p in cls.list_out):
                     cls.list_out.append(person_image)
                     cls.add_image_to_banner(person_image.list_images[0], person_image.direction)
+                    print(f"Number of images of ID {person_image.id} {person_image.list_images.__len__()}")
                     # cls.compare_and_process()
             
     @classmethod
